@@ -2,7 +2,7 @@
   "name": "cursor-context",
   "displayName": "Cursor Context Manager",
   "description": "Automated context management system for Cursor IDE",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -15,7 +15,7 @@
     "theme": "dark"
   },
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.1.37"
   },
   "categories": [
     "Other"
@@ -107,15 +107,15 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "@types/vscode": "^1.80.0",
+    "@types/vscode": "^1.1.37",
     "@types/sqlite3": "^3.1.11",
     "@types/esprima": "^4.0.6",
-    "@vscode/vsce": "^2.24.0",
+    "@vscode/vsce": "2.15.0",
     "ts-loader": "^9.5.1",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4",
     "typescript": "^5.7.2",
-    "vscode": "^1.80.0"
+    "vscode": "^1.1.37"
   },
   "dependencies": {
     "chokidar": "^4.0.3",
