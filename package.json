@@ -2,7 +2,7 @@
   "name": "cursor-context",
   "displayName": "Cursor Context Manager",
   "description": "Automated context management system for Cursor IDE",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "license": "MIT",
   "repository": {
     "type": "git",
