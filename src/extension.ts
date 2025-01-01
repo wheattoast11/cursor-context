@@ -269,7 +269,11 @@ class InsightItem extends vscode.TreeItem {
 class ContextManager {
     public readonly db: sqlite3.Database;
     private statusBar: vscode.StatusBarItem;
-    private watcher: chokidar.FSWatcher;
+    private watcher: chokidar.FSWatcher = chokidar.watch('', {
+        ignored: [/(^|[\/\\])\../, '**/node_modules/**', '**/out/**', '**/dist/**'],
+        persistent: true,
+        ignoreInitial: true
+    });
     private git: SimpleGit;
     private nlpManager: NlpManager;
     private tfidf: TfIdf;
@@ -278,35 +282,22 @@ class ContextManager {
     private treeDataProvider: ContextTreeDataProvider;
     
     constructor(private context: vscode.ExtensionContext) {
-        // Initialize components
-        const dbPath = path.join(context.globalStoragePath, 'context.db');
+        // Initialize database in extension's global storage path
+        const dbPath = path.join(context.globalStorageUri.fsPath, 'context.db');
         this.db = new sqlite3.Database(dbPath);
+        
+        // Initialize other components
+        this.statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+        this.treeDataProvider = new ContextTreeDataProvider(this);
+        this.embeddings = new Map();
         this.git = simpleGit();
         this.nlpManager = new NlpManager({ languages: ['en'] });
         this.tfidf = new TfIdf();
-        this.embeddings = new Map();
         
-        // Initialize tree data provider
-        this.treeDataProvider = new ContextTreeDataProvider(this);
-        
-        // Initialize status bar
-        this.statusBar = vscode.window.createStatusBarItem(
-            vscode.StatusBarAlignment.Right,
-            100
-        );
-        
-        // Initialize file watcher with improved settings
-        this.watcher = chokidar.watch('', {
-            ignored: [/(^|[\/\\])\../, 'node_modules', 'out', 'dist'],
-            persistent: true,
-            ignoreInitial: false,
-            awaitWriteFinish: {
-                stabilityThreshold: 1000,
-                pollInterval: 100
-            }
+        // Setup components
+        this.setup().catch(err => {
+            vscode.window.showErrorMessage(`Failed to initialize Cursor Context: ${err.message}`);
         });
-        
-        this.setup();
     }
     
     private async setup() {
@@ -387,19 +378,37 @@ class ContextManager {
     }
     
     private setupWatcher() {
+        // Watch for file changes
+        this.watcher.on('add', async (filepath) => {
+            try {
+                const content = await vscode.workspace.fs.readFile(vscode.Uri.file(filepath));
+                await this.processFile(filepath, content.toString());
+            } catch (err) {
+                console.error(`Error processing file ${filepath}:`, err);
+            }
+        });
+
+        this.watcher.on('change', async (filepath) => {
+            try {
+                const content = await vscode.workspace.fs.readFile(vscode.Uri.file(filepath));
+                await this.processFile(filepath, content.toString());
+            } catch (err) {
+                console.error(`Error processing file ${filepath}:`, err);
+            }
+        });
+
+        // Set up workspace folder watching
         if (vscode.workspace.workspaceFolders) {
-            const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath;
-            this.watcher.add(workspaceRoot);
-            
-            this.watcher.on('change', async (filepath) => {
-                try {
-                    const doc = await vscode.workspace.openTextDocument(filepath);
-                    await this.processFile(filepath, doc.getText());
-                } catch (error) {
-                    console.error('Error processing file change:', error);
-                }
+            vscode.workspace.workspaceFolders.forEach(folder => {
+                this.watcher.add(folder.uri.fsPath);
             });
         }
+
+        // Watch for workspace folder changes
+        vscode.workspace.onDidChangeWorkspaceFolders(event => {
+            event.added.forEach(folder => this.watcher.add(folder.uri.fsPath));
+            event.removed.forEach(folder => this.watcher.unwatch(folder.uri.fsPath));
+        });
     }
     
     private registerCommands() {

@@ -21,7 +21,9 @@
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onView:cursor-context-history",
+    "onView:cursor-context-insights"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -115,7 +117,11 @@
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4",
     "typescript": "^5.7.2",
-    "vscode": "^1.1.37"
+    "vscode": "^1.1.37",
+    "path-browserify": "^1.0.1",
+    "crypto-browserify": "^3.12.0",
+    "stream-browserify": "^3.0.0",
+    "buffer": "^6.0.3"
   },
   "dependencies": {
     "chokidar": "^4.0.3",
